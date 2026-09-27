@@ -1,1 +1,14 @@
-{"name":"sudoku","version":"1.2.0","private":true,"type":"module","scripts":{"build":"node scripts/build.mjs","test":"node tests/test.mjs","deploy":"wrangler deploy --config wrangler.jsonc"},"devDependencies":{"wrangler":"^4.0.0"}}
+{
+  "name": "sudoku",
+  "version": "1.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests/test.mjs",
+    "deploy": "wrangler deploy --config wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {Player} from '../worker/index.js';
+import {Player,finishable} from '../worker/index.js';
 import bank from '../worker/bank.js';
 import {solve} from '../scripts/generate.mjs';
 const records=new Map();const ctx={storage:{async get(k){return structuredClone(records.get(k))},async put(k,v){records.set(k,structuredClone(v))}}};
@@ -18,3 +18,9 @@ await send({type:'new',level:0});for(let j=0;j<81;j++)if(!state.game.board[j])aw
 assert.equal((await send({type:'move',cell:i,number:solution})).r.status,400);assert.equal(state.wins[0],1);
 for(let puzzle=1;puzzle<60;puzzle++){await send({type:'new',level:0});assert.equal(state.game.index,puzzle);for(let j=0;j<81;j++)if(!state.game.board[j])await send({type:'move',cell:j,number:Number(bank[0][puzzle].solution[j])});}assert.equal(state.wins[0],60);assert.equal((await send({type:'new',level:1})).r.status,200);assert.equal((await send({type:'new',level:2,replace:true})).r.status,403);
 console.log('Passed: notes, resume, stale requests, 3-strike failure, wins counted once, 60-completion unlock, next tier stays locked.');
+
+const full=[...bank[0][0].solution].map(Number);const single=full.slice();single[0]=0;assert.equal(finishable(single),true);assert.equal(finishable(Array(81).fill(0)),false);assert.equal(finishable(full),false);
+state.wins[0]=0;state.game=null;await ctx.storage.put('state',state);await send({type:'new',level:0});assert.equal([...state.game.givens].filter(n=>n!=='0').length,46);
+const editable=[...state.game.givens].flatMap((n,i)=>n==='0'?[i]:[]);state.game.board=full.slice();for(const i of editable.slice(0,2))state.game.board[i]=0;await ctx.storage.put('state',state);
+await send({type:'move',cell:editable[0],number:full[editable[0]]});assert.equal(state.game.status,'won');assert.equal(state.game.autoFinished,true);assert.equal(state.wins[0],1);assert.equal(state.game.board.join(''),full.join(''));
+console.log('Passed: easier Easy, no ambiguous auto-finish, automatic completion saved and counted once.');

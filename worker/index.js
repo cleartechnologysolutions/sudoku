@@ -1,5 +1,12 @@
 import bank from './bank.js';
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
+export function finishable(board){
+ const empty=board.map((n,i)=>n? -1:i).filter(i=>i>=0);
+ return empty.length>0&&empty.every(i=>{
+ const used=new Set(board.filter((_,j)=>Math.floor(j/9)===Math.floor(i/9)||j%9===i%9||(Math.floor(j/27)===Math.floor(i/27)&&Math.floor(j%9/3)===Math.floor(i%9/3))));
+ return [1,2,3,4,5,6,7,8,9].filter(n=>!used.has(n)).length===1;
+ });
+}
 export class Player {
  constructor(ctx){this.ctx=ctx;this.queue=Promise.resolve();}
  async fetch(req){const task=this.queue.then(()=>this.handle(req));this.queue=task.catch(()=>{});return task;}
@@ -12,7 +19,10 @@ export class Player {
  if(level>0&&s.wins[level-1]<60)return json({error:'Complete 60 puzzles in the previous difficulty first.'},403);
  if(s.game?.status==='playing'&&!m.replace)return json({error:'Finish or replace your current board.'},400);
  const index=s.wins[level]%60,p=bank[level][index];
- s.game={id:crypto.randomUUID(),level,index,givens:p.givens,board:p.givens.split('').map(Number),notes:Array.from({length:81},()=>[]),mistakes:0,status:'playing',started:Date.now(),lastWrong:null};
+ let givens=p.givens;
+ // More starting clues for new Easy boards; solutions and existing games stay stable.
+ if(level===0){const a=[...givens];let count=a.filter(n=>n!=='0').length;for(let k=0;k<81&&count<46;k++){const i=(k*37+index*7)%81;if(a[i]==='0'){a[i]=p.solution[i];count++;}}givens=a.join('');}
+ s.game={id:crypto.randomUUID(),level,index,givens,board:givens.split('').map(Number),notes:Array.from({length:81},()=>[]),mistakes:0,status:'playing',started:Date.now(),lastWrong:null};
  }else{
  const g=s.game,i=m.cell;if(!g||g.status!=='playing'||!Number.isInteger(i)||i<0||i>80||g.givens[i]!=='0')return json({error:'That cell cannot be changed.'},400);
  const n=m.number;if(!Number.isInteger(n)||n<0||n>9)return json({error:'Choose a number from 1 to 9.'},400);
@@ -22,6 +32,7 @@ export class Player {
  if(n===0){g.board[i]=0;g.notes[i]=[];}
  else if(Number(bank[g.level][g.index].solution[i])!==n){g.mistakes++;g.lastWrong={cell:i,number:n};if(g.mistakes>=3)g.status='failed';}
  else{g.board[i]=n;g.notes[i]=[];for(let j=0;j<81;j++)if(Math.floor(j/9)===Math.floor(i/9)||j%9===i%9||(Math.floor(j/27)===Math.floor(i/27)&&Math.floor(j%9/3)===Math.floor(i%9/3)))g.notes[j]=g.notes[j].filter(x=>x!==n);
+ if(finishable(g.board)){g.board=[...bank[g.level][g.index].solution].map(Number);g.notes=Array.from({length:81},()=>[]);g.autoFinished=true;}
  if(g.board.join('')===bank[g.level][g.index].solution){g.status='won';s.wins[g.level]++;}}
  }else return json({error:'Unknown action'},400);
  }

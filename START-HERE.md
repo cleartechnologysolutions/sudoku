@@ -35,3 +35,6 @@ Puzzles are graded by a fixed solver: Easy needs naked singles only; Medium adds
 `node tests/runtime.mjs` tests the Cloudflare runtime using Miniflare (included with Wrangler).
 
 Puzzle solutions stay in the Worker bundle; they are not included in the browser assets or API responses. This is a casual game, not a cheat-proof competitive system.
+
+## Version 1.1.0
+Upload all updated files and redeploy with the existing command. Keep the same Worker and binding to retain progress. New Easy boards start with 46 clues. Existing games keep their original clues. Wins display a persistent completion banner. Completed rows, columns, and boxes animate. Fully placed digits disappear from the selector. After a correct move, when every remaining cell has just one legal candidate, the server completes and saves the game atomically; the browser animates the remaining entries. Reduced-motion preferences are honored.

@@ -38,3 +38,6 @@ Puzzle solutions stay in the Worker bundle; they are not included in the browser
 
 ## Version 1.1.0
 Upload all updated files and redeploy with the existing command. Keep the same Worker and binding to retain progress. New Easy boards start with 46 clues. Existing games keep their original clues. Wins display a persistent completion banner. Completed rows, columns, and boxes animate. Fully placed digits disappear from the selector. After a correct move, when every remaining cell has just one legal candidate, the server completes and saves the game atomically; the browser animates the remaining entries. Reduced-motion preferences are honored.
+
+## Version 1.2.0
+Brighter blue and sunshine-yellow palette. Playing layout scales the board to the available viewport height (including mobile safe areas) and places controls alongside it in landscape. The completion message overlays the board and can be dismissed, so it does not extend the page. Upload the updated files and redeploy; saved progress stays in the same Worker.

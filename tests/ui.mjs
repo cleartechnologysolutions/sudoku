@@ -23,3 +23,10 @@ assert.equal(requests.length,2);assert.equal(vm.runInContext('state.game.board[1
 vm.runInContext(`state.game.status='failed';state.game.mistakes=2;render()`,context);
 assert.equal(els.get('failure').hidden,false);assert.equal(typeof els.get('replay').onclick,'function');assert.equal(typeof els.get('fresh-puzzle').onclick,'function');
 console.log('UI passed: rapid taps queue with latest revision and captured number; duplicate pending taps suppressed; failure choices visible.');
+
+for(const [completed,start,expected] of [[[4],4,5],[[4,5],4,6],[[9],9,1],[[9,1],9,2]]){
+ context.completed=completed;context.start=start;
+ vm.runInContext(`state.game.status='playing';state.game.board=[...completed.flatMap(n=>Array(9).fill(n)),...Array(81-completed.length*9).fill(0)];selected=start;render()`,context);
+ assert.equal(vm.runInContext('selected',context),expected);
+}
+console.log('UI passed: completed digit advances upward, skips completed digits, and wraps after nine.');

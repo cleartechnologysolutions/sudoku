@@ -6,7 +6,7 @@ function drain(){if(busy||animating||!moveQueue.length)return;const entry=moveQu
 $('profile').onsubmit=e=>{e.preventDefault();location.href='/'+$('name').value.trim().toLowerCase();};
 function message(t){$('message').textContent=t;}
 function render(){if(!state)return;const g=state.game;$('board').replaceChildren();$('numbers').replaceChildren();$('pencil').classList.toggle('active',pencil);$('pencil').setAttribute('aria-pressed',String(pencil));$('pencil-state').textContent=pencil?'On':'Off';$('erase').classList.toggle('active',erase);$('erase').setAttribute('aria-pressed',String(erase));
- if(g&&g.board.filter(v=>v===selected).length===9)selected=[1,2,3,4,5,6,7,8,9].find(n=>g.board.filter(v=>v===n).length<9)||0;
+ if(g&&g.board.filter(v=>v===selected).length===9)selected=Array.from({length:9},(_,offset)=>(selected+offset)%9+1).find(n=>g.board.filter(v=>v===n).length<9)||0;
  $('victory').hidden=g?.status!=='won';$('failure').hidden=g?.status!=='failed';
  for(let n=1;n<=9;n++){if(g&&g.board.filter(v=>v===n).length===9)continue;const b=document.createElement('button');b.textContent=n;b.className=selected===n&&!erase?'active':'';b.setAttribute('aria-pressed',String(selected===n&&!erase));activate(b,()=>{if(animating)return;selected=n;erase=false;render();});$('numbers').append(b);}
  $('level').textContent=g?names[g.level]:'YOUR PUZZLES';$('headline').textContent=!g?'Ready when you are.':g.status==='won'?'Nicely done.':g.status==='failed'?'A fresh start awaits.':'One square at a time.';

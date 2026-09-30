@@ -11,15 +11,19 @@ export class Player {
  constructor(ctx){this.ctx=ctx;this.queue=Promise.resolve();}
  async fetch(req){const task=this.queue.then(()=>this.handle(req));this.queue=task.catch(()=>{});return task;}
  async handle(req){let s=await this.ctx.storage.get('state')||{version:0,wins:[0,0,0,0,0],game:null};
+ if(s.game?.status==='playing'&&s.game.mistakes>=2){s.game.status='failed';s.version++;await this.ctx.storage.put('state',s);}
  if(req.method==='GET')return json(s);
  let m;try{m=await req.json();}catch{return json({error:'Invalid request'},400);}
  if(m.version!==s.version)return json({error:'Your saved game changed. Loaded the latest board.',state:s},409);
  if(m.type==='new'){
  const level=m.level;if(!Number.isInteger(level)||level<0||level>4)return json({error:'Invalid difficulty'},400);
- if(level>0&&s.wins[level-1]<60)return json({error:'Complete 60 puzzles in the previous difficulty first.'},403);
+ if(level>1&&s.wins[level-1]<30)return json({error:'Complete 30 puzzles in the previous difficulty first.'},403);
  if(s.game?.status==='playing'&&!m.replace)return json({error:'Finish or replace your current board.'},400);
- const index=s.wins[level]%60,p=bank[level][index];
- let givens=p.givens;
+ if(m.replay && (!s.game || s.game.status!=='failed' || s.game.level!==level))return json({error:'Only a failed board can be replayed.'},400);
+ s.nextPuzzle ||= s.wins.map(n=>n%60);
+ const index=m.replay?s.game.index:s.game?.level===level?(s.game.index+1)%60:s.nextPuzzle[level],p=bank[level][index];
+ let givens=m.replay?s.game.givens:p.givens;
+ if(!m.replay)s.nextPuzzle[level]=(index+1)%60;
  // More starting clues for new Easy boards; solutions and existing games stay stable.
  if(level===0){const a=[...givens];let count=a.filter(n=>n!=='0').length;for(let k=0;k<81&&count<46;k++){const i=(k*37+index*7)%81;if(a[i]==='0'){a[i]=p.solution[i];count++;}}givens=a.join('');}
  s.game={id:crypto.randomUUID(),level,index,givens,board:givens.split('').map(Number),notes:Array.from({length:81},()=>[]),mistakes:0,status:'playing',started:Date.now(),lastWrong:null};
@@ -30,7 +34,7 @@ export class Player {
  }else if(m.type==='move'){
  g.lastWrong=null;
  if(n===0){g.board[i]=0;g.notes[i]=[];}
- else if(Number(bank[g.level][g.index].solution[i])!==n){g.mistakes++;g.lastWrong={cell:i,number:n};if(g.mistakes>=3)g.status='failed';}
+ else if(Number(bank[g.level][g.index].solution[i])!==n){g.mistakes++;g.lastWrong={cell:i,number:n};if(g.mistakes>=2)g.status='failed';}
  else{g.board[i]=n;g.notes[i]=[];for(let j=0;j<81;j++)if(Math.floor(j/9)===Math.floor(i/9)||j%9===i%9||(Math.floor(j/27)===Math.floor(i/27)&&Math.floor(j%9/3)===Math.floor(i%9/3)))g.notes[j]=g.notes[j].filter(x=>x!==n);
  if(finishable(g.board)){g.board=[...bank[g.level][g.index].solution].map(Number);g.notes=Array.from({length:81},()=>[]);g.autoFinished=true;}
  if(g.board.join('')===bank[g.level][g.index].solution){g.status='won';s.wins[g.level]++;}}
